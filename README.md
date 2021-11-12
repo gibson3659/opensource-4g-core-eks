@@ -1,4 +1,4 @@
-## Opensource 4G Core
+## Fork of aws-samples/opensource-4g-core-eks to expand to 5G
 
 This repo contains the code templates that was used in the Opensource Mobile Packet Core Implementation on Amazon EKS blog post.
 https://aws.amazon.com/blogs/opensource/open-source-mobile-core-network-implementation-on-amazon-elastic-kubernetes-service/
