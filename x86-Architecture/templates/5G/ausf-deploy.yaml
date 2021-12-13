@@ -1,0 +1,47 @@
+apiVersion: apps/v1 # for versions before 1.9.0 use apps/v1beta2
+kind: Deployment
+metadata:
+  name: open5gs-ausf-deployment
+  labels:
+    epc-mode: ausf
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      epc-mode: ausf
+  template:
+    metadata:
+      annotations:
+        route53-service-name: '[
+                                  { "name": "n.ausf.open5gs.service", "multus-int": "ipvlan-multus-sub-1-cp" }
+                               ]'
+        k8s.v1.cni.cncf.io/networks: '[ { "name": "ipvlan-multus-sub-1-cp", "interface": "net1" }
+                                      ]'      
+      labels:
+        epc-mode: ausf
+    spec:
+      nodeSelector:
+        nodegroup: Ausf
+      initContainers:
+        - name: init-ausf
+          image: alpine:latest
+          command: ['sh', '-c']
+          args:
+            - apk update; apk add nmap-ncat;
+              until nslookup n.amf.open5gs.service >> /dev/null; do echo waiting for amf to be ready; sleep 5; done
+      containers:
+        - name: ausf
+          image: "{{ .Values.open5gs.image.repository }}:{{ .Values.open5gs.image.tag }}"
+          imagePullPolicy: {{ .Values.open5gs.image.pullPolicy }}
+          command: ["/bin/sh", "-c"]
+          args:
+            - sleep 10;
+              open5gs-ausfd -c /open5gs/config-map/ausf.yaml
+          volumeMounts:
+            - name: open5gs-ausf-config
+              mountPath: /open5gs/config-map/ausf.yaml
+              subPath: "ausf.yaml"
+      volumes:
+        - name: open5gs-ausf-config
+          configMap:
+            name: open5gs-ausf-config

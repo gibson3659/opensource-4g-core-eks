@@ -1,0 +1,29 @@
+{{- if .Values.udm.enabled -}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: open5gs-udm-config
+  namespace: open5gs
+  labels:
+    epc-mode: udm
+data:
+  udm.yaml: |
+    logger:
+    {{ toYaml .Values.udm.logger | indent 2 }}
+
+    {{- if .Values.udm.parameter }}
+    parameter:
+    {{ toYaml .Values.udm.parameter | indent 2 }}
+    {{- end }}
+
+    #
+    udm:
+      sbi:
+        dev: net1
+        port: 7777
+
+    nrf:
+      sbi:
+        - name: "open5gs-nrf-svc-pool"
+          port: 7777
+{{- end }}

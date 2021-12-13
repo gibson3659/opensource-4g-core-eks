@@ -1,0 +1,51 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: open5gs-amf-config
+  namespace: open5gs
+  labels:
+    epc-mode: amf
+data:
+  amf.yaml: |
+    logger:
+    {{ toYaml .Values.amf.logger | indent 2 }}
+
+    {{- if .Values.amf.parameter }}
+    parameter:
+    {{ toYaml .Values.amf.parameter | indent 2 }}
+    {{- end }}
+
+    {{- if .Values.amf.max }}
+    max:
+    {{ toYaml .Values.amf.max | indent 2 }}
+    {{- end }}
+
+    {{- if .Values.amf.pool }}
+    pool:
+    {{ toYaml .Values.amf.pool | indent 2 }}
+    {{- end }}
+
+
+    amf:
+      sbi:
+        dev: net1
+        port: 7777
+      ngap:
+        dev: net1
+      guami:
+{{ toYaml .Values.amf.guami | indent 8 }}
+      tai:
+{{ toYaml .Values.amf.tai | indent 8 }}
+      plmn_support:
+{{ toYaml .Values.amf.plmn_support | indent 8 }}
+      security:
+          integrity_order : [ NIA2, NIA1, NIA0 ]
+          ciphering_order : [ NEA0, NEA1, NEA2 ]
+      network_name:
+          full: awsOpen5GS
+      amf_name: open5gs-amf
+
+    nrf:
+      sbi:
+        - name: "open5gs-nrf-svc-pool"
+          port: 7777

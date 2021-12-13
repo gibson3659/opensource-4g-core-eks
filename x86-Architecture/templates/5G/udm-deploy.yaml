@@ -1,0 +1,48 @@
+apiVersion: apps/v1 # for versions before 1.9.0 use apps/v1beta2
+kind: Deployment
+metadata:
+  name: open5gs-udm-deployment
+  labels:
+    epc-mode: udm
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      epc-mode: udm
+  template:
+    metadata:
+      annotations:
+        route53-service-name: '[
+                                  { "name": "n.udm.open5gs.service", "multus-int": "ipvlan-multus-sub-1-cp" }
+                               ]'
+        k8s.v1.cni.cncf.io/networks: '[ { "name": "ipvlan-multus-sub-1-cp", "interface": "net1" }
+                                      ]'      
+      labels:
+        epc-mode: udm
+    spec:
+      nodeSelector:
+        nodegroup: Udm
+      initContainers:
+        - name: init-udm
+          image: alpine:latest
+          command: ['sh', '-c']     
+          args:
+            - apk update; apk add nmap-ncat; sleep 15;
+              until nslookup n.amf.open5gs.service >> /dev/null; do echo waiting for amf to be ready; sleep 5; done;
+              until nslookup s5.smf.open5gs.service >> /dev/null; do echo waiting for smf DNS record to be ready; sleep 5; done;
+      containers:
+        - name: udm
+          image: "{{ .Values.open5gs.image.repository }}:{{ .Values.open5gs.image.tag }}"
+          imagePullPolicy: {{ .Values.open5gs.image.pullPolicy }}
+          command: ["/bin/sh", "-c"]
+          args:
+            - sleep 10;
+              open5gs-udmd -c /open5gs/config-map/udm.yaml
+          volumeMounts:
+            - name: open5gs-udm-config
+              mountPath: /open5gs/config-map/udm.yaml
+              subPath: "udm.yaml"
+      volumes:
+        - name: open5gs-udm-config
+          configMap:
+            name: open5gs-udm-config

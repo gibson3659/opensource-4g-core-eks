@@ -1,0 +1,48 @@
+apiVersion: apps/v1 # for versions before 1.9.0 use apps/v1beta2
+kind: Deployment
+metadata:
+  name: open5gs-nssf-deployment
+  namespace: open5gs
+  labels:
+    epc-mode: nssf
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      epc-mode: nssf
+  template:
+    metadata:
+      annotations:
+        route53-service-name: '[
+                                  { "name": "n.nssf.open5gs.service", "multus-int": "ipvlan-multus-sub-1-cp" }
+                               ]'
+        k8s.v1.cni.cncf.io/networks: '[ { "name": "ipvlan-multus-sub-1-cp", "interface": "net1" }
+                                      ]'
+      labels:
+        epc-mode: nssf
+    spec:
+      nodeSelector:
+        nodegroup: Nssf
+      initContainers:
+        - name: init-nssf
+          image: alpine:latest
+          command: ['sh', '-c']      
+          args:
+            - apk update; apk add nmap-ncat;sleep 15;
+              until nslookup n.amf.open5gs.service >> /dev/null; do echo waiting for amf to be ready; sleep 5; done
+      containers:
+        - name: nssf
+          image: "{{ .Values.open5gs.image.repository }}:{{ .Values.open5gs.image.tag }}"
+          imagePullPolicy: {{ .Values.open5gs.image.pullPolicy }}
+          command: ["/bin/sh", "-c"]
+          args:
+            - sleep 10;
+              open5gs-nssfd -c /open5gs/config-map/nssf.yaml
+          volumeMounts:
+            - name: open5gs-nssf-config
+              mountPath: /open5gs/config-map/nssf.yaml
+              subPath: "nssf.yaml"
+      volumes:
+        - name: open5gs-nssf-config
+          configMap:
+            name: open5gs-nssf-config

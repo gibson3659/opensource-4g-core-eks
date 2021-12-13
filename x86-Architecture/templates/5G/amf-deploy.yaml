@@ -1,0 +1,48 @@
+apiVersion: apps/v1 # for versions before 1.9.0 use apps/v1beta2
+kind: Deployment
+metadata:
+  name: open5gs-amf-deployment
+  namespace: open5gs
+  labels:
+    epc-mode: amf
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      epc-mode: amf
+  template:
+    metadata:
+      annotations:
+        route53-service-name: '[
+                                  { "name": "n.amf.open5gs.service", "multus-int": "ipvlan-multus-sub-1-cp" }
+                               ]'
+        k8s.v1.cni.cncf.io/networks: '[ { "name": "ipvlan-multus-sub-1-cp", "interface": "net1" }
+                                      ]'
+      labels:
+        epc-mode: amf
+    spec:
+      nodeSelector:
+        nodegroup: Amf
+#      initContainers:
+#        - name: init-amf
+#          image: alpine:latest
+#          command: ['sh', '-c']
+#          args:
+#            - apk update; apk add nmap-ncat;
+#              until nslookup open5gs-nrf-svc-pool>>/dev/null; do echo waiting for nrf to be ready; sleep 5; done
+      containers:
+        - name: amf
+          image: "{{ .Values.open5gs.image.repository }}:{{ .Values.open5gs.image.tag }}"
+          imagePullPolicy: {{ .Values.open5gs.image.pullPolicy }}
+          command: ["/bin/sh", "-c"]
+          args:
+            - sleep 10;
+              open5gs-amfd -c /open5gs/config-map/amf.yaml
+          volumeMounts:
+            - name: open5gs-amf-config
+              mountPath: /open5gs/config-map/amf.yaml
+              subPath: "amf.yaml"
+      volumes:
+        - name: open5gs-amf-config
+          configMap:
+            name: open5gs-amf-config

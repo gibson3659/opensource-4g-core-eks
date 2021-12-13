@@ -1,0 +1,29 @@
+{{- if .Values.ausf.enabled -}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: open5gs-ausf-config
+  namespace: open5gs
+  labels:
+    epc-mode: ausf
+data:
+  ausf.yaml: |
+    logger:
+    {{ toYaml .Values.ausf.logger | indent 2 }}
+
+    {{- if .Values.ausf.parameter }}
+    parameter:
+    {{ toYaml .Values.ausf.parameter | indent 2 }}
+    {{- end }}
+
+    #
+    ausf:
+      sbi:
+        dev: net1
+        port: 7777
+
+    nrf:
+      sbi:
+        - name: "open5gs-nrf-svc-pool"
+          port: 7777
+{{- end }}

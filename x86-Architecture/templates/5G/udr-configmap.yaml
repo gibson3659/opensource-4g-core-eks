@@ -1,0 +1,40 @@
+{{- if .Values.udr.enabled -}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: open5gs-udr-config
+  namespace: open5gs
+  labels:
+    epc-mode: udr
+data:
+  udr.yaml: |
+    db_uri: {{ .Values.mongo.uri }}
+
+    logger:
+    {{ toYaml .Values.udr.logger | indent 2 }}
+    {{- if .Values.udr.parameter }}
+    parameter:
+    {{ toYaml .Values.udr.parameter | indent 2 }}
+    {{- end }}
+
+    {{- if .Values.mme.max }}
+    max:
+    {{ toYaml .Values.mme.max | indent 2 }}
+    {{- end }}
+
+    {{- if .Values.mme.pool }}
+    pool:
+    {{ toYaml .Values.mme.pool | indent 2 }}
+    {{- end }}
+
+
+    udr:
+      sbi:
+        dev: net1
+        port: 7777
+
+    nrf:
+      sbi:
+        - name: "open5gs-nrf-svc-pool"
+          port: 7777
+{{- end }}
